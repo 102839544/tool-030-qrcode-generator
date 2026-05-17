@@ -11,11 +11,8 @@
 ## 📦 安装
 
 ```bash
-# 克隆仓库
 git clone https://github.com/102839544/tool-030-qrcode-generator.git
 cd tool-030-qrcode-generator
-
-# 安装依赖
 pip install -r requirements.txt
 ```
 
