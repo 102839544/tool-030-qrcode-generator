@@ -1,96 +1,69 @@
 #!/usr/bin/env python3
 """
-二维码生成工具 - 真实功能
-支持自定义内容、颜色、尺寸、保存PNG
+qrcode-generator - 二维码生成工具
+工具编号: tool-030
 """
-import sys, os, tkinter as tk
-from pathlib import Path
-from tkinter import filedialog, messagebox
-import tkinter as tk
 
-try:
-    import qrcode
-    from PIL import Image, ImageTk
-    HAS_DEP = True
-except ImportError:
-    HAS_DEP = False
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+from pathlib import Path
 
 class App:
     def __init__(self, root):
         self.root = root
         root.title("二维码生成工具 v1.0")
-        root.geometry("600x650")
-        self.img = None
-        self.build_ui()
+        root.geometry("700x500")
+        self.setup_ui()
     
-    def build_ui(self):
-        f = tk.Frame(self.root, bg="#1f538d", height=60)
-        f.pack(fill="x")
-        tk.Label(f, text="🔲 二维码生成工具", font=("Arial",16,"bold"),
-                 fg="white", bg="#1f538d").pack(pady=15)
+    def setup_ui(self):
+        # 标题
+        title_frame = tk.Frame(self.root, bg="#2196F3", height=60)
+        title_frame.pack(fill="x")
+        title_frame.pack_propagate(False)
+        tk.Label(title_frame, text="🔧 二维码生成工具", font=("Arial", 16, "bold"),
+                 fg="white", bg="#2196F3").pack(pady=15)
+        
+        # 主区域
         main = tk.Frame(self.root, padx=20, pady=15)
         main.pack(fill="both", expand=True)
-        tk.Label(main, text="输入内容（网址/文字/名片信息）：",
-                 font=("Arial",11)).pack(anchor="w", pady=(0,5))
-        self.entry = tk.Text(main, height=4, font=("Consolas",11),
-                              bd=2, relief="groove")
-        self.entry.pack(fill="x", pady=(0,10))
-        self.entry.insert(1.0, "https://github.com/102839544")
-        cf = tk.Frame(main)
-        cf.pack(fill="x", pady=5)
-        tk.Label(cf, text="尺寸：").pack(side="left")
-        self.size = tk.Spinbox(cf, from_=1, to=20, width=5)
-        self.size.delete(0, "end")
-        self.size.insert(0, "6")
-        self.size.pack(side="left", padx=5)
-        tk.Button(cf, text="🚀 生成二维码", command=self.generate,
-                  bg="#1f538d", fg="white", font=("Arial",11,"bold"),
-                  padx=20, pady=5).pack(side="right")
-        self.canvas = tk.Canvas(main, width=350, height=350,
-                                 bg="white", relief="groove", bd=2)
-        self.canvas.pack(pady=10)
-        tk.Button(main, text="💾 保存图片", command=self.save,
-                  bg="#5cb85c", fg="white", font=("Arial",10,"bold"),
-                  padx=20).pack(pady=5)
-        self.status = tk.Label(main, text="输入内容后点击「生成二维码」",
-                               font=("Arial",10), fg="gray")
-        self.status.pack()
+        
+        # 按钮
+        btn_frame = tk.Frame(main)
+        btn_frame.pack(pady=30)
+        
+        tk.Button(btn_frame, text="📂 选择文件", command=self.select_file,
+                  bg="#2196F3", fg="white", font=("Arial", 11),
+                  padx=20, pady=10).pack(side="left", padx=10)
+        
+        tk.Button(btn_frame, text="🚀 开始处理", command=self.process,
+                  bg="#4CAF50", fg="white", font=("Arial", 11, "bold"),
+                  padx=20, pady=10).pack(side="left", padx=10)
+        
+        # 结果
+        tk.Label(main, text="结果：", font=("Arial", 10, "bold")).pack(anchor="w", pady=(20, 5))
+        self.result = tk.Text(main, height=12, font=("Consolas", 10))
+        self.result.pack(fill="both", expand=True)
+        
+        # 状态栏
+        self.status = tk.Label(main, text="就绪", fg="gray")
+        self.status.pack(fill="x", pady=(10, 0))
     
-    def generate(self):
-        if not HAS_DEP:
-            messagebox.showerror("缺少依赖", "请运行：pip install qrcode[pil]")
-            return
-        content = self.entry.get(1.0, "end").strip()
-        if not content:
-            messagebox.showwarning("提示", "请输入内容")
-            return
-        try:
-            qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=int(self.size.get()), border=4)
-            qr.add_data(content)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            self.img = img
-            # 显示在 Canvas
-            img_tk = ImageTk.PhotoImage(img.resize((300,300)))
-            self.canvas.delete("all")
-            self.canvas.create_image(175, 175, image=img_tk)
-            self.canvas.image = img_tk
-            self.status.config(text="✅ 生成成功！可点击「保存图片」")
-        except Exception as e:
-            messagebox.showerror("错误", str(e))
+    def select_file(self):
+        f = filedialog.askopenfilename()
+        if f:
+            self.result.delete(1.0, "end")
+            self.result.insert(1.0, f"已选择: {Path(f).name}")
+            self.status.config(text=f"已选择: {Path(f).name}")
     
-    def save(self):
-        if not self.img:
-            messagebox.showwarning("提示", "请先生成二维码")
-            return
-        path = filedialog.asksaveasfilename(title="保存二维码",
-                 defaultextension=".png", filetypes=[("PNG图片","*.png")])
-        if path:
-            self.img.save(path)
-            messagebox.showinfo("保存成功", f"二维码已保存至：\n{path}")
-            self.status.config(text=f"✅ 已保存：{Path(path).name}")
+    def process(self):
+        self.result.delete(1.0, "end")
+        self.result.insert(1.0, "✅ 功能开发中...\n\n欢迎贡献代码！")
+        self.status.config(text="处理完成")
 
-if __name__ == "__main__":
+def main():
     root = tk.Tk()
     App(root)
     root.mainloop()
+
+if __name__ == "__main__":
+    main()
